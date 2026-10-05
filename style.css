@@ -34,8 +34,12 @@ svg { display: block; }
   position: fixed; inset: 0;
   display: grid; grid-template-rows: auto 1fr auto; justify-items: center;
   padding: 5vh 16px 4vh;
+  user-select: none; -webkit-user-select: none; touch-action: none; /* background is a drag surface */
   transition: transform 0.9s var(--ease), opacity 0.6s;
 }
+
+/* Skull reveal layer: above the head and title, below the hand and panel */
+.underworld { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 
 .title { text-align: center; transform: rotate(-3deg); animation: drop 0.8s var(--pop) both; }
 .title h1 {
@@ -66,7 +70,7 @@ svg { display: block; }
 
 /* ─── PULL HAND ─── */
 .pull {
-  position: fixed; right: 0; top: 46%;
+  position: fixed; right: 0; top: 46%; z-index: 2;
   display: flex; align-items: center; gap: 10px;
   text-decoration: none; touch-action: none; cursor: grab;
   transition: transform 0.7s var(--ease), opacity 0.4s;
@@ -79,7 +83,7 @@ svg { display: block; }
 
 /* ─── ABOUT PANEL (opened by #about:target) ─── */
 .about {
-  position: fixed; top: 16px; bottom: 16px; right: 16px; width: var(--panel-w);
+  position: fixed; top: 16px; bottom: 16px; right: 16px; width: var(--panel-w); z-index: 3;
   transform: translateX(calc(100% + 220px));
   visibility: hidden; /* keeps the closed panel out of tab order */
   transition: transform 0.9s var(--ease), visibility 0s 0.9s;
