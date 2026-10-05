@@ -14,9 +14,22 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand+SC&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Three.js for 3D Toon Floating Artifacts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 
 <body>
+
+  <!-- Custom interactive doodle cursor -->
+  <div class="custom-cursor" id="customCursor" aria-hidden="true">
+    <svg viewBox="0 0 40 40">
+      <path d="M6 6 L26 14 L16 18 L24 28 L20 31 L12 21 L6 26 Z" fill="#fff" stroke="#1c1c1c" stroke-width="3" stroke-linejoin="round" />
+      <circle cx="16" cy="18" r="2.5" fill="#ff0b36" />
+    </svg>
+  </div>
+
+  <!-- 3D Interactive Floating World (Three.js WebGL) -->
+  <canvas id="three-stage" class="three-stage" aria-hidden="true"></canvas>
 
   <!-- Hand-drawn "line boil": the seed is swapped a few times per second in script.js -->
   <svg width="0" height="0" aria-hidden="true" style="position:absolute">
@@ -32,44 +45,105 @@
       <h2>Data Analyst &amp; Fullstack Dev <span>aka BadHyu123</span></h2>
     </header>
 
-    <!-- Mascot: pirate head, drag it around -->
+    <!-- Mascot: 3D Pirate Medal of BadHyu123 (grab and drag it) -->
     <div class="head-spot">
+      <div class="head-shadow" id="headShadow" aria-hidden="true"></div>
       <span class="me boil" aria-hidden="true">me →</span>
-      <div class="head" id="head" role="img" aria-label="Pirate mascot of BadHyu123 — grab and drag it">
-        <svg class="boil" viewBox="0 0 400 390">
-          <g stroke="#1c1c1c" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="200" cy="252" r="118" fill="#fff" />
 
-            <g class="face-idle">
-              <path d="M128 224 L178 240 M272 224 L222 240" fill="none" />
-              <g id="eyes" stroke="none">
-                <ellipse cx="158" cy="266" rx="14" ry="20" fill="#1c1c1c" />
-                <ellipse cx="242" cy="266" rx="14" ry="20" fill="#1c1c1c" />
-                <circle cx="162" cy="259" r="4.5" fill="#fff" />
-                <circle cx="246" cy="259" r="4.5" fill="#fff" />
+      <div class="head medal-3d" id="head" role="img" aria-label="3D Pirate Medal of BadHyu123 — grab and drag it">
+        <!-- Medal loop at the top -->
+        <div class="medal-hanger boil" aria-hidden="true">
+          <svg viewBox="0 0 100 60">
+            <path d="M30 52 C30 18 70 18 70 52" fill="none" stroke="#1c1c1c" stroke-width="12" stroke-linecap="round" />
+            <path d="M38 52 C38 28 62 28 62 52" fill="none" stroke="#ffda44" stroke-width="5" stroke-linecap="round" />
+          </svg>
+        </div>
+
+        <div class="medal-body">
+          <!-- 3D Extruded rim layers -->
+          <div class="medal-rim-layer layer-1" aria-hidden="true"></div>
+          <div class="medal-rim-layer layer-2" aria-hidden="true"></div>
+          <div class="medal-rim-layer layer-3" aria-hidden="true"></div>
+
+          <!-- FRONT FACE: Pirate mascot -->
+          <div class="medal-face medal-face-front">
+            <svg class="boil mascot-svg" viewBox="0 0 400 390">
+              <!-- Golden medal rim circle with doodle notches -->
+              <circle cx="200" cy="200" r="186" fill="#f8cf47" stroke="#1c1c1c" stroke-width="12" />
+              <circle cx="200" cy="200" r="168" fill="none" stroke="#1c1c1c" stroke-width="5" stroke-dasharray="8 10" />
+
+              <g stroke="#1c1c1c" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="200" cy="252" r="118" fill="#fff" />
+
+                <g class="face-idle">
+                  <path d="M128 224 L178 240 M272 224 L222 240" fill="none" />
+                  <g id="eyes" stroke="none">
+                    <ellipse cx="158" cy="266" rx="14" ry="20" fill="#1c1c1c" />
+                    <ellipse cx="242" cy="266" rx="14" ry="20" fill="#1c1c1c" />
+                    <circle cx="162" cy="259" r="4.5" fill="#fff" />
+                    <circle cx="246" cy="259" r="4.5" fill="#fff" />
+                  </g>
+                  <path d="M148 314 C178 342 232 340 262 304" fill="none" stroke-width="10" />
+                  <path d="M256 296 L270 310" fill="none" stroke-width="8" />
+                </g>
+
+                <g class="face-grab">
+                  <path d="M136 246 L172 264 L136 282 M264 246 L228 264 L264 282" fill="none" stroke-width="11" />
+                  <path d="M136 302 L264 302 C258 372 142 372 136 302 Z" fill="#fff" stroke-width="10" />
+                  <path d="M140 326 Q200 336 260 326 M170 304 L172 352 M200 304 L200 358 M230 304 L228 352" fill="none"
+                    stroke-width="7" />
+                </g>
+
+                <!-- Tricorn hat with crown + anchor -->
+                <path fill="#1c1c1c"
+                  d="M14 128 C40 150 80 150 112 120 C128 52 272 52 288 120 C320 150 360 150 386 128 C380 170 320 196 200 204 C80 196 20 170 14 128 Z" />
+                <path d="M44 156 C110 188 290 188 356 156" fill="none" stroke="#fff" stroke-width="4" />
+                <g stroke="#fff" stroke-width="5" fill="none">
+                  <path d="M188 92 L190 78 L196 85 L200 74 L204 85 L210 78 L212 92 Z" fill="#fff" stroke-width="3" />
+                  <circle cx="200" cy="104" r="6" />
+                  <path d="M200 110 L200 140 M188 117 L212 117 M182 128 Q200 150 218 128" />
+                </g>
               </g>
-              <path d="M148 314 C178 342 232 340 262 304" fill="none" stroke-width="10" />
-              <path d="M256 296 L270 310" fill="none" stroke-width="8" />
-            </g>
+            </svg>
+          </div>
 
-            <g class="face-grab">
-              <path d="M136 246 L172 264 L136 282 M264 246 L228 264 L264 282" fill="none" stroke-width="11" />
-              <path d="M136 302 L264 302 C258 372 142 372 136 302 Z" fill="#fff" stroke-width="10" />
-              <path d="M140 326 Q200 336 260 326 M170 304 L172 352 M200 304 L200 358 M230 304 L228 352" fill="none"
-                stroke-width="7" />
-            </g>
+          <!-- BACK FACE: Jolly Roger pirate seal -->
+          <div class="medal-face medal-face-back" aria-hidden="true">
+            <svg class="boil mascot-svg" viewBox="0 0 400 390">
+              <circle cx="200" cy="200" r="186" fill="#e5b428" stroke="#1c1c1c" stroke-width="12" />
+              <circle cx="200" cy="200" r="168" fill="none" stroke="#1c1c1c" stroke-width="5" stroke-dasharray="8 10" />
 
-            <!-- Tricorn hat with crown + anchor -->
-            <path fill="#1c1c1c"
-              d="M14 128 C40 150 80 150 112 120 C128 52 272 52 288 120 C320 150 360 150 386 128 C380 170 320 196 200 204 C80 196 20 170 14 128 Z" />
-            <path d="M44 156 C110 188 290 188 356 156" fill="none" stroke="#fff" stroke-width="4" />
-            <g stroke="#fff" stroke-width="5" fill="none">
-              <path d="M188 92 L190 78 L196 85 L200 74 L204 85 L210 78 L212 92 Z" fill="#fff" stroke-width="3" />
-              <circle cx="200" cy="104" r="6" />
-              <path d="M200 110 L200 140 M188 117 L212 117 M182 128 Q200 150 218 128" />
-            </g>
-          </g>
-        </svg>
+              <g stroke="#1c1c1c" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Crossed bones -->
+                <line x1="90" y1="90" x2="310" y2="310" stroke-width="22" />
+                <line x1="310" y1="90" x2="90" y2="310" stroke-width="22" />
+                <circle cx="85" cy="85" r="14" fill="#fff" stroke-width="8" />
+                <circle cx="315" cy="315" r="14" fill="#fff" stroke-width="8" />
+                <circle cx="315" cy="85" r="14" fill="#fff" stroke-width="8" />
+                <circle cx="85" cy="315" r="14" fill="#fff" stroke-width="8" />
+
+                <!-- Skull base -->
+                <circle cx="200" cy="180" r="76" fill="#fff" />
+                <path d="M165 220 L235 220 L228 255 L172 255 Z" fill="#fff" stroke-width="10" />
+                <!-- Eyes -->
+                <ellipse cx="174" cy="178" rx="15" ry="20" fill="#1c1c1c" stroke="none" />
+                <ellipse cx="226" cy="178" rx="15" ry="20" fill="#1c1c1c" stroke="none" />
+                <circle cx="178" cy="172" r="4.5" fill="#fff" stroke="none" />
+                <circle cx="230" cy="172" r="4.5" fill="#fff" stroke="none" />
+                <!-- Nose -->
+                <polygon points="200,196 193,212 207,212" fill="#1c1c1c" stroke="none" />
+                <!-- Teeth -->
+                <line x1="184" y1="222" x2="184" y2="252" stroke-width="6" />
+                <line x1="200" y1="222" x2="200" y2="252" stroke-width="6" />
+                <line x1="216" y1="222" x2="216" y2="252" stroke-width="6" />
+
+                <!-- Banner / Signature text -->
+                <path d="M80 326 Q200 354 320 326" fill="none" stroke-width="8" />
+                <text x="200" y="320" font-size="34" font-family="'Patrick Hand SC', cursive" text-anchor="middle" fill="#1c1c1c" stroke="none" font-weight="bold">BADHYU123</text>
+              </g>
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -91,6 +165,14 @@
           <path d="M50 46 Q72 22 94 46 Z" class="fill" />
         </svg>
         grab
+      </li>
+      <li>
+        <svg viewBox="0 0 100 100">
+          <ellipse cx="50" cy="50" rx="30" ry="30" />
+          <ellipse cx="50" cy="50" rx="20" ry="20" stroke-dasharray="4 6" />
+          <circle cx="50" cy="50" r="6" class="fill" />
+        </svg>
+        grab loot
       </li>
     </ul>
 
@@ -188,32 +270,71 @@
         </section>
 
         <section class="work" aria-label="Projects">
-          <ul>
-            <li>
-              <span class="name">F-Bites</span>
-              <a href="https://github.com/BadHyu123/F-Bites" target="_blank" rel="noopener"
-                aria-label="F-Bites source code"><span class="wave">Code</span></a>
-              <span class="what">Fullstack — food rescue marketplace</span>
-            </li>
-            <li>
-              <span class="name">Legal AI Copilot</span>
-              <a href="https://github.com/BadHyu123/legal-ai-copilot" target="_blank" rel="noopener"
-                aria-label="Legal AI Copilot source code"><span class="wave">Code</span></a>
-              <span class="what">AI · RAG — Vietnamese law Q&amp;A</span>
-            </li>
-            <li>
-              <span class="name">PrivateClass Vision</span>
-              <a href="https://github.com/chinhvan001/NCKH-PrivateClass-Vision" target="_blank" rel="noopener"
-                aria-label="PrivateClass Vision source code"><span class="wave">Code</span></a>
-              <span class="what">NCKH — computer vision research</span>
-            </li>
-            <li>
-              <span class="name">And more…</span>
-              <a href="https://github.com/BadHyu123?tab=repositories" target="_blank" rel="noopener"
-                aria-label="All repositories on GitHub"><span class="wave">Repos</span></a>
-              <span class="what">Side projects &amp; experiments</span>
-            </li>
-          </ul>
+          <div class="cards-grid">
+            <article class="project-card tilt-card" data-tilt>
+              <div class="card-glare"></div>
+              <div class="card-inner">
+                <div class="card-top">
+                  <span class="card-badge badge-fullstack">Fullstack</span>
+                  <a href="https://github.com/BadHyu123/F-Bites" target="_blank" rel="noopener" class="card-link"
+                    aria-label="F-Bites source code"><span class="wave">Code ↗</span></a>
+                </div>
+                <h4 class="card-title">F-Bites</h4>
+                <p class="card-desc">Food rescue marketplace connecting surplus food to buyers with real-time deals.</p>
+                <div class="card-tags">
+                  <span>React</span><span>Node.js</span><span>Express</span><span>Firestore</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="project-card tilt-card" data-tilt>
+              <div class="card-glare"></div>
+              <div class="card-inner">
+                <div class="card-top">
+                  <span class="card-badge badge-ai">AI · RAG</span>
+                  <a href="https://github.com/BadHyu123/legal-ai-copilot" target="_blank" rel="noopener" class="card-link"
+                    aria-label="Legal AI Copilot source code"><span class="wave">Code ↗</span></a>
+                </div>
+                <h4 class="card-title">Legal AI Copilot</h4>
+                <p class="card-desc">Intelligent assistant for Vietnamese law Q&amp;A powered by LLM &amp; vector search.</p>
+                <div class="card-tags">
+                  <span>Python</span><span>FastAPI</span><span>LangChain</span><span>Vector DB</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="project-card tilt-card" data-tilt>
+              <div class="card-glare"></div>
+              <div class="card-inner">
+                <div class="card-top">
+                  <span class="card-badge badge-cv">NCKH · Vision</span>
+                  <a href="https://github.com/chinhvan001/NCKH-PrivateClass-Vision" target="_blank" rel="noopener" class="card-link"
+                    aria-label="PrivateClass Vision source code"><span class="wave">Code ↗</span></a>
+                </div>
+                <h4 class="card-title">PrivateClass Vision</h4>
+                <p class="card-desc">Scientific research on classroom attention &amp; behavior analytics using deep learning.</p>
+                <div class="card-tags">
+                  <span>PyTorch</span><span>YOLOv8</span><span>OpenCV</span><span>Deep Learning</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="project-card tilt-card" data-tilt>
+              <div class="card-glare"></div>
+              <div class="card-inner">
+                <div class="card-top">
+                  <span class="card-badge badge-more">Experiments</span>
+                  <a href="https://github.com/BadHyu123?tab=repositories" target="_blank" rel="noopener" class="card-link"
+                    aria-label="All repositories on GitHub"><span class="wave">Repos ↗</span></a>
+                </div>
+                <h4 class="card-title">And more…</h4>
+                <p class="card-desc">Curated collection of micro-services, data pipelines, scraping bots &amp; UI experiments.</p>
+                <div class="card-tags">
+                  <span>TypeScript</span><span>Docker</span><span>Python</span><span>Data &amp; AI</span>
+                </div>
+              </div>
+            </article>
+          </div>
         </section>
       </div>
     </div>
