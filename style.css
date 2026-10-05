@@ -1,0 +1,168 @@
+/* Nguyen The Huy (BadHyu123) · doodle portfolio */
+:root {
+  --red: #ff0b36;
+  --ink: #1c1c1c;
+  --ink-2: #343434;
+  --grey: #c9c9c9;
+  --shade: rgba(28, 28, 28, 0.36); /* doodle hints: reads as dark red on --red */
+  --panel-w: min(760px, calc(100vw - 32px));
+  --ease: cubic-bezier(0.7, 0, 0.2, 1);
+  --pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--red);
+  color: var(--ink);
+  font-family: 'Patrick Hand SC', 'Comic Sans MS', cursive;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a, button { color: inherit; font: inherit; }
+button { background: none; border: 0; cursor: pointer; }
+ul { list-style: none; }
+svg { display: block; }
+::selection { background: var(--ink); color: var(--red); }
+:focus-visible { outline: 3px dashed var(--ink); outline-offset: 4px; }
+.panel :focus-visible { outline-color: #fff; }
+
+.boil { filter: url(#boil); }
+
+/* ─── STAGE ─── */
+.stage {
+  position: fixed; inset: 0;
+  display: grid; grid-template-rows: auto 1fr auto; justify-items: center;
+  padding: 5vh 16px 4vh;
+  transition: transform 0.9s var(--ease), opacity 0.6s;
+}
+
+.title { text-align: center; transform: rotate(-3deg); animation: drop 0.8s var(--pop) both; }
+.title h1 {
+  font-size: clamp(48px, 7vw, 100px); font-weight: 400; line-height: 0.82;
+  -webkit-text-stroke: 2px var(--ink); /* thicken the hand font into a marker look */
+}
+.title h1 small { display: block; font-size: 0.4em; line-height: 1.2; transform: rotate(-4deg); }
+.title h2 { font-size: clamp(16px, 1.7vw, 22px); font-weight: 400; margin-top: 12px; }
+.title h2 span { display: block; color: var(--shade); transform: rotate(3deg); margin-top: 2px; }
+
+.head-spot { position: relative; align-self: center; }
+.head {
+  width: min(44vh, 62vw); aspect-ratio: 400 / 390;
+  cursor: grab; touch-action: none; user-select: none;
+  will-change: transform;
+}
+.head > svg { width: 100%; height: 100%; animation: pop 0.9s 0.2s var(--pop) both; }
+.head.grabbed { cursor: grabbing; }
+.face-grab, .head.grabbed .face-idle { display: none; }
+.head.grabbed .face-grab { display: inline; }
+
+.me { position: absolute; left: -4.5em; top: 64%; font-size: clamp(18px, 2vw, 28px); transform: rotate(-8deg); }
+
+.hints { display: flex; gap: clamp(20px, 4vw, 56px); color: var(--shade); font-size: clamp(18px, 2vw, 26px); }
+.hints li { display: grid; justify-items: center; }
+.hints svg, .pull-hint svg { width: clamp(52px, 6vw, 80px); fill: none; stroke: currentColor; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.hints .fill { fill: currentColor; }
+
+/* ─── PULL HAND ─── */
+.pull {
+  position: fixed; right: 0; top: 46%;
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; touch-action: none; cursor: grab;
+  transition: transform 0.7s var(--ease), opacity 0.4s;
+}
+.pull:active { cursor: grabbing; }
+.hand { width: clamp(150px, 19vw, 280px); margin-right: calc(clamp(150px, 19vw, 280px) * -0.12); animation: beckon 1.6s ease-in-out infinite; }
+.pull:hover .hand { animation-duration: 0.6s; }
+.pull-hint { display: grid; justify-items: center; color: var(--shade); font-size: clamp(18px, 2vw, 26px); }
+.pull-hint svg { width: clamp(36px, 4vw, 52px); }
+
+/* ─── ABOUT PANEL (opened by #about:target) ─── */
+.about {
+  position: fixed; top: 16px; bottom: 16px; right: 16px; width: var(--panel-w);
+  transform: translateX(calc(100% + 220px));
+  visibility: hidden; /* keeps the closed panel out of tab order */
+  transition: transform 0.9s var(--ease), visibility 0s 0.9s;
+}
+.about:target { transform: none; visibility: visible; transition: transform 0.9s var(--ease), visibility 0s; }
+body:has(.about:target) .stage { transform: translateX(-34vw) scale(1.15); }
+body:has(.about:target) .title,
+body:has(.about:target) .hints,
+body:has(.about:target) .me { opacity: 0; }
+body:has(.about:target) .pull { transform: translateX(120%); opacity: 0; pointer-events: none; }
+.title, .hints, .me { transition: opacity 0.4s; }
+
+.sign {
+  position: absolute; left: -150px; top: 30%; width: 150px;
+  transform: rotate(-8deg); transform-origin: 50% 90%;
+  transition: transform 0.3s var(--pop);
+}
+.sign:hover { transform: rotate(4deg) scale(1.05); }
+.sign text { font-family: 'Patrick Hand SC', cursive; }
+
+.panel {
+  height: 100%; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--ink); color: #fff; border-radius: 22px;
+  padding: 24px clamp(20px, 4vw, 44px) 40px;
+  font-size: 17px; line-height: 1.25;
+  scrollbar-color: var(--ink-2) transparent;
+}
+.panel-doodle { width: min(440px, 100%); margin: 0 auto 28px; }
+.panel-doodle text { font-family: 'Patrick Hand SC', cursive; }
+
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
+
+.intro h3 { font-size: 21px; font-weight: 400; line-height: 1.1; margin-bottom: 18px; }
+.intro p { color: var(--grey); margin-bottom: 14px; }
+
+.stack { margin: 22px 0; }
+.stack div { display: grid; grid-template-columns: 6.5em 1fr; gap: 8px; padding: 7px 0; border-top: 2px solid var(--ink-2); }
+.stack dt { color: #fff; }
+.stack dd { color: var(--grey); }
+
+.links li { margin-bottom: 6px; }
+.links a, .links button, .work a { text-decoration: none; display: inline-flex; align-items: baseline; gap: 8px; }
+.links a::before, .links button::before, .work a::before { content: '►'; font-size: 0.6em; transition: transform 0.25s var(--pop); }
+.links a:hover::before, .links button:hover::before, .work a:hover::before { transform: translateX(4px); }
+.links button { text-align: left; }
+.copied { color: var(--red); }
+
+.work li {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 12px;
+  margin-bottom: 18px;
+}
+.work li::after { /* the connector line between name and link */
+  content: ''; grid-row: 1; grid-column: 2; height: 2px; background: var(--grey); opacity: 0.6;
+}
+.work .name { grid-column: 1; font-size: 19px; }
+.work a { grid-column: 3; grid-row: 1; }
+.work .what { grid-column: 1 / -1; color: var(--grey); }
+
+/* Letter wave on hover (letters are split in script.js) */
+.wave { display: inline-flex; }
+.wave > span[aria-hidden] { display: inline-block; white-space: pre; }
+a:hover .wave > span[aria-hidden], button:hover .wave > span[aria-hidden] {
+  animation: wave 0.45s calc(var(--i) * 28ms) var(--ease);
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ─── KEYFRAMES ─── */
+@keyframes pop { from { transform: scale(0) rotate(-30deg); } }
+@keyframes drop { from { transform: translateY(-60px) rotate(-10deg); opacity: 0; } }
+@keyframes beckon { 50% { transform: translateX(-14px); } }
+@keyframes wave { 40% { transform: translateY(-5px) rotate(-6deg); } }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 760px) {
+  .about { top: 8px; bottom: 8px; right: 8px; left: 8px; width: auto; }
+  .sign { left: auto; right: 6px; top: 6px; width: 70px; z-index: 1; }
+  .panel { padding-top: 70px; }
+  body:has(.about:target) .stage { transform: none; opacity: 0; }
+  .cols { grid-template-columns: 1fr; }
+  .me { display: none; }
+  .pull { top: auto; bottom: 22vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
+}
