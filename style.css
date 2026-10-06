@@ -4,7 +4,9 @@
   --ink: #1c1c1c;
   --ink-2: #343434;
   --grey: #c9c9c9;
-  --shade: rgba(28, 28, 28, 0.36); /* doodle hints: reads as dark red on --red */
+  --sand: #e8d5b0;
+  --ocean: #0ea5c0;
+  --shade: rgba(28, 28, 28, 0.36);
   --panel-w: min(760px, calc(100vw - 32px));
   --ease: cubic-bezier(0.7, 0, 0.2, 1);
   --pop: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -13,7 +15,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
 body {
-  background: var(--red);
+  background: #0b7d8e;
   color: var(--ink);
   font-family: 'Patrick Hand SC', 'Comic Sans MS', cursive;
   overflow: hidden;
@@ -23,9 +25,16 @@ a, button { color: inherit; font: inherit; }
 button { background: none; border: 0; cursor: pointer; }
 ul { list-style: none; }
 svg { display: block; }
-::selection { background: var(--ink); color: var(--red); }
+::selection { background: var(--ink); color: var(--sand); }
 :focus-visible { outline: 3px dashed var(--ink); outline-offset: 4px; }
 .panel :focus-visible { outline-color: #fff; }
+
+/* ─── ANIMATED BEACH BACKGROUND ─── */
+.beach-bg {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  z-index: -1;
+}
 
 .boil { filter: url(#boil); }
 
@@ -52,6 +61,10 @@ svg { display: block; }
 }
 .custom-cursor.grabbing {
   transform: translate(-12px, -12px) scale(0.95) rotate(16deg);
+}
+.custom-cursor.revealing {
+  transform: translate(-6px, -6px) scale(1.35) rotate(-22deg);
+  filter: drop-shadow(0 0 12px #ffbe3b);
 }
 
 /* 3D WebGL Background Scene */
@@ -172,7 +185,13 @@ svg { display: block; }
 
 .me { position: absolute; left: -4.5em; top: 64%; font-size: clamp(18px, 2vw, 28px); transform: rotate(-8deg); }
 
-.hints { display: flex; gap: clamp(20px, 4vw, 56px); color: var(--shade); font-size: clamp(18px, 2vw, 26px); }
+.hints {
+  display: flex; gap: clamp(20px, 4vw, 56px);
+  color: #ffffff;
+  font-size: clamp(18px, 2vw, 26px);
+  text-shadow: 0 2px 6px rgba(0, 35, 60, 0.75);
+  filter: drop-shadow(0 2px 5px rgba(0, 30, 50, 0.6));
+}
 .hints li { display: grid; justify-items: center; }
 .hints svg, .pull-hint svg { width: clamp(52px, 6vw, 80px); fill: none; stroke: currentColor; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
 .hints .fill { fill: currentColor; }
@@ -215,32 +234,69 @@ body:has(.about:target) .pull { transform: translateX(120%); opacity: 0; pointer
 
 .panel {
   height: 100%; overflow-y: auto; overscroll-behavior: contain;
-  background: var(--ink); color: #fff; border-radius: 22px;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 235, 195, 0.55) 0%, transparent 40%),
+    radial-gradient(circle at 15% 85%, rgba(160, 105, 50, 0.25) 0%, transparent 45%),
+    linear-gradient(170deg, #f4e6ca 0%, #ecd3aa 45%, #debda0 100%);
+  color: #2b1b0e;
+  border-radius: 22px;
+  border: 4px solid #6b4423;
+  box-shadow: inset 0 0 70px rgba(100, 55, 20, 0.45), 0 16px 45px rgba(0, 0, 0, 0.6);
   padding: 24px clamp(20px, 4vw, 44px) 40px;
   font-size: 17px; line-height: 1.25;
-  scrollbar-color: var(--ink-2) transparent;
+  scrollbar-color: #8c5d31 transparent;
+  position: relative;
+  overflow-x: hidden;
 }
+/* Antique parchment border stitching */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  border: 2px dashed rgba(110, 70, 30, 0.35);
+  pointer-events: none;
+  margin: 7px;
+  z-index: 2;
+}
+
+.treasure-map-watermark {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.panel > *:not(.treasure-map-watermark) {
+  position: relative;
+  z-index: 1;
+}
+
 .panel-doodle { width: min(440px, 100%); margin: 0 auto 28px; }
-.panel-doodle text { font-family: 'Patrick Hand SC', cursive; }
+.panel-doodle text { font-family: 'Patrick Hand SC', cursive; fill: #4a2c14; }
+.panel-doodle g[stroke] { stroke: #6e4624; }
 
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
 
-.intro h3 { font-size: 21px; font-weight: 400; line-height: 1.1; margin-bottom: 18px; }
-.intro p { color: var(--grey); margin-bottom: 14px; }
+.intro h3 { font-size: 21px; font-weight: 400; line-height: 1.1; margin-bottom: 18px; color: #2e1a0b; }
+.intro p { color: #52381f; margin-bottom: 14px; }
 
 .stack { margin: 22px 0; }
-.stack div { display: grid; grid-template-columns: 6.5em 1fr; gap: 8px; padding: 7px 0; border-top: 2px solid var(--ink-2); }
-.stack dt { color: #fff; }
-.stack dd { color: var(--grey); }
+.stack div { display: grid; grid-template-columns: 6.5em 1fr; gap: 8px; padding: 7px 0; border-top: 2px dashed rgba(110, 70, 36, 0.35); }
+.stack dt { color: #2e1a0b; font-weight: bold; }
+.stack dd { color: #5a3d24; }
 
 .links li { margin-bottom: 6px; }
-.links a, .links button, .work a { text-decoration: none; display: inline-flex; align-items: baseline; gap: 8px; }
-.links a::before, .links button::before, .work a::before { content: '►'; font-size: 0.6em; transition: transform 0.25s var(--pop); }
+.links a, .links button, .work a { text-decoration: none; display: inline-flex; align-items: baseline; gap: 8px; color: #2e1a0b; }
+.links a::before, .links button::before, .work a::before { content: '►'; font-size: 0.6em; transition: transform 0.25s var(--pop); color: #c41e1e; }
+.links a:hover, .links button:hover, .work a:hover { color: #c41e1e; }
 .links a:hover::before, .links button:hover::before, .work a:hover::before { transform: translateX(4px); }
 .links button { text-align: left; }
-.copied { color: var(--red); }
+.copied { color: #c41e1e; }
 
-/* ─── 3D TILT PROJECT CARDS ─── */
+/* ─── 3D TILT BOUNTY PROJECT CARDS (Parchment theme) ─── */
 .cards-grid {
   display: flex;
   flex-direction: column;
@@ -249,24 +305,24 @@ body:has(.about:target) .pull { transform: translateX(120%); opacity: 0; pointer
 }
 .project-card {
   position: relative;
-  background: #151515;
-  border: 2px solid #2e2e2e;
+  background: #fbf5e6;
+  border: 2px solid #82542a;
   border-radius: 14px;
   padding: 16px 18px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(70, 40, 15, 0.2);
   transform-style: preserve-3d;
   transition: transform 0.15s ease-out, box-shadow 0.25s, border-color 0.25s;
   overflow: hidden;
   user-select: none;
 }
 .project-card:hover {
-  border-color: #888;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), 0 0 16px rgba(255, 11, 54, 0.25);
+  border-color: #2e1a0b;
+  box-shadow: 0 10px 24px rgba(70, 40, 15, 0.35), 0 0 16px rgba(196, 30, 30, 0.2);
 }
 .card-glare {
   position: absolute;
   inset: -100%;
-  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.15) 0%, transparent 55%);
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.4) 0%, transparent 55%);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.25s;
@@ -291,26 +347,27 @@ body:has(.about:target) .pull { transform: translateX(120%); opacity: 0; pointer
   font-size: 13px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: #252525;
-  color: #eee;
-  border: 1px dashed #444;
+  background: #f0debe;
+  color: #3b2210;
+  border: 1px dashed #7e5229;
   letter-spacing: 0.5px;
+  font-weight: bold;
 }
-.badge-ai { background: rgba(255, 11, 54, 0.15); color: #ff5271; border-color: rgba(255, 11, 54, 0.5); }
-.badge-cv { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border-color: rgba(56, 189, 248, 0.5); }
-.badge-fullstack { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; border-color: rgba(52, 211, 153, 0.5); }
-.badge-more { background: rgba(251, 191, 36, 0.15); color: #fde047; border-color: rgba(251, 191, 36, 0.5); }
+.badge-ai { background: rgba(196, 30, 30, 0.15); color: #ad1818; border-color: rgba(196, 30, 30, 0.5); }
+.badge-cv { background: rgba(14, 130, 180, 0.15); color: #0c6a94; border-color: rgba(14, 130, 180, 0.5); }
+.badge-fullstack { background: rgba(30, 140, 70, 0.15); color: #156d35; border-color: rgba(30, 140, 70, 0.5); }
+.badge-more { background: rgba(200, 130, 10, 0.15); color: #9c6304; border-color: rgba(200, 130, 10, 0.5); }
 
 .card-title {
   font-size: 21px;
-  color: #fff;
-  font-weight: 400;
+  color: #2b1708;
+  font-weight: bold;
   margin: 0;
   line-height: 1.1;
 }
 .card-desc {
   font-size: 15px;
-  color: var(--grey);
+  color: #5c3e22;
   line-height: 1.35;
   margin: 0;
 }
@@ -323,18 +380,19 @@ body:has(.about:target) .pull { transform: translateX(120%); opacity: 0; pointer
 .card-tags span {
   font-size: 13px;
   padding: 1px 8px;
-  background: #222;
-  color: #ccc;
+  background: #faebd0;
+  color: #52371d;
   border-radius: 6px;
-  border: 1px solid #333;
+  border: 1px solid #c7a87e;
 }
 .card-link {
   font-size: 16px;
-  color: #fff;
+  color: #2e1a0b;
   text-decoration: none;
+  font-weight: bold;
 }
 .card-link:hover {
-  color: var(--red);
+  color: #c41e1e;
 }
 
 /* Letter wave on hover (letters are split in script.js) */

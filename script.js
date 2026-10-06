@@ -17,6 +17,367 @@ if (!calm && noise) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   1b. Animated Beach Shoreline Background (Canvas)
+   Faithfully inspired by ref-bg.png: diagonal shoreline, sand rivulets,
+   turbulent breaking white foam, sea foam lace, luminous turquoise ocean
+   ───────────────────────────────────────────────────────────── */
+(function initBeachBg() {
+  const cvs = $('#beach-bg');
+  if (!cvs) return;
+  const ctx = cvs.getContext('2d');
+  let W, H, dpr;
+
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cvs.width = W * dpr;
+    cvs.height = H * dpr;
+  }
+  resize();
+  addEventListener('resize', resize);
+
+  // Generate fixed sand drainage rivulet paths (like in ref-bg.png)
+  const rivulets = [];
+  const RIV_COUNT = 38;
+  for (let i = 0; i < RIV_COUNT; i++) {
+    rivulets.push({
+      xRatio: 0.05 + (i / RIV_COUNT) * 0.9 + (Math.random() - 0.5) * 0.02,
+      width: 1.5 + Math.random() * 3.5,
+      alpha: 0.06 + Math.random() * 0.12,
+      waviness: 6 + Math.random() * 12,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+
+  // Mouse ripple interaction on ocean
+  const ripples = [];
+  addEventListener('pointermove', e => {
+    // Only spawn ripples on ocean area (bottom half)
+    const normY = e.clientY / H;
+    if (normY > 0.42 && ripples.length < 15 && Math.random() < 0.3) {
+      ripples.push({
+        x: e.clientX,
+        y: e.clientY,
+        r: 4,
+        maxR: 35 + Math.random() * 25,
+        alpha: 0.35
+      });
+    }
+  }, { passive: true });
+
+  // Coastline base curve (diagonal slope from top-left to right-center)
+  function coastBaseY(xN, time) {
+    // Diagonal slope: ~32% at left (X=0) down to ~50% at right (X=1)
+    const baseSlope = 0.32 + xN * 0.20;
+
+    // Tidal surge cycle (waves surge up into sand and recede)
+    const tideCycle = time * 0.85;
+    const tideSurge = Math.sin(tideCycle) * 0.038
+                    + Math.sin(tideCycle * 1.9 + xN * 3.0) * 0.015;
+
+    // Organic shoreline undulation
+    const undulation = Math.sin(xN * 5.2 + time * 0.4) * 0.016
+                     + Math.sin(xN * 9.8 - time * 0.6) * 0.008
+                     + Math.cos(xN * 3.1 + 0.8) * 0.014;
+
+    return baseSlope + tideSurge + undulation;
+  }
+
+  function drawBeach(time) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // ───────────────────────────────────────────────────────────
+    // 1. DEEP OCEAN BASE (Luminous Tropical Turquoise Gradient)
+    // ───────────────────────────────────────────────────────────
+    const oceanGrad = ctx.createLinearGradient(0, H * 0.35, 0, H);
+    oceanGrad.addColorStop(0, '#2de2e6');     // shallow bright turquoise
+    oceanGrad.addColorStop(0.22, '#00c6d4');  // vibrant tropical teal
+    oceanGrad.addColorStop(0.48, '#029ab5');  // rich cyan blue
+    oceanGrad.addColorStop(0.75, '#016f8a');  // deep ocean blue
+    oceanGrad.addColorStop(1, '#014559');     // deep sapphire marine
+    ctx.fillStyle = oceanGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Sunlight caustics ribbons on water (moving organic shimmer)
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.09)';
+    ctx.lineWidth = 3;
+    for (let c = 0; c < 7; c++) {
+      const cy = H * (0.55 + c * 0.065) + Math.sin(time * 0.5 + c * 1.8) * 8;
+      ctx.beginPath();
+      for (let s = 0; s <= 30; s++) {
+        const cx = (s / 30) * W;
+        const wave = Math.sin(s * 0.6 + time * 1.2 + c * 1.1) * 6
+                   + Math.cos(s * 1.2 - time * 0.9) * 3;
+        ctx[s === 0 ? 'moveTo' : 'lineTo'](cx, cy + wave);
+      }
+      ctx.stroke();
+    }
+
+    // Sparkle caustics dots on deep water
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    for (let i = 0; i < 28; i++) {
+      const sx = ((i * 3821 + time * 20) % W);
+      const sy = H * 0.58 + ((i * 5923) % (H * 0.40)) + Math.sin(time + i) * 4;
+      const sr = 1.2 + Math.sin(time * 2 + i * 2.5) * 0.8;
+      if (sr > 0.5) {
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // ───────────────────────────────────────────────────────────
+    // 2. SAND SHORELINE (Top-right area with drainage rivulets)
+    // ───────────────────────────────────────────────────────────
+    const steps = 100;
+
+    // Draw sand landmass
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(W, 0);
+    for (let i = steps; i >= 0; i--) {
+      const xN = i / steps;
+      const yN = coastBaseY(xN, time);
+      ctx.lineTo(xN * W, yN * H);
+    }
+    ctx.closePath();
+
+    // Warm natural sand gradient (matching ref-bg.png top-down sand)
+    const sandGrad = ctx.createLinearGradient(W * 0.6, 0, 0, H * 0.55);
+    sandGrad.addColorStop(0, '#f9edd8');     // fine dry sunny sand
+    sandGrad.addColorStop(0.35, '#ebd3b0');  // warm honey beach sand
+    sandGrad.addColorStop(0.75, '#dec29a');  // darker packed sand
+    sandGrad.addColorStop(1, '#caa778');     // coastal sand bank
+    ctx.fillStyle = sandGrad;
+    ctx.fill();
+
+    // Vertical drainage sand rivulets (the prominent texture in ref-bg.png)
+    ctx.save();
+    rivulets.forEach(riv => {
+      const startX = riv.xRatio * W;
+      const startY = 0;
+      const endY = coastBaseY(riv.xRatio, time) * H - 8;
+      if (endY <= startY) return;
+
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      const subSteps = 16;
+      for (let s = 1; s <= subSteps; s++) {
+        const prog = s / subSteps;
+        const curY = startY + prog * (endY - startY);
+        const curX = startX + Math.sin(prog * riv.waviness + riv.phase) * 9
+                            + Math.cos(prog * 5.0) * 3;
+        ctx.lineTo(curX, curY);
+      }
+      ctx.strokeStyle = `rgba(145, 108, 68, ${riv.alpha})`;
+      ctx.lineWidth = riv.width;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Sand micro-grain texture
+    ctx.fillStyle = 'rgba(130, 95, 55, 0.04)';
+    for (let i = 0; i < 45; i++) {
+      const gx = ((i * 8191 + 17) % W);
+      const gy = ((i * 4937 + 11) % (H * 0.42));
+      ctx.fillRect(gx, gy, 1.8, 1.8);
+    }
+
+    // ───────────────────────────────────────────────────────────
+    // 3. WET GLOSSY SAND STRIP (Left behind as tide recedes)
+    // ───────────────────────────────────────────────────────────
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const xN = i / steps;
+      const yN = coastBaseY(xN, time) - 0.038;
+      ctx[i === 0 ? 'moveTo' : 'lineTo'](xN * W, yN * H);
+    }
+    for (let i = steps; i >= 0; i--) {
+      const xN = i / steps;
+      const yN = coastBaseY(xN, time);
+      ctx.lineTo(xN * W, yN * H);
+    }
+    ctx.closePath();
+    // Wet sand with glossy sky reflection
+    const wetGrad = ctx.createLinearGradient(0, H * 0.25, 0, H * 0.55);
+    wetGrad.addColorStop(0, 'rgba(185, 150, 110, 0.15)');
+    wetGrad.addColorStop(0.7, 'rgba(165, 130, 90, 0.48)');
+    wetGrad.addColorStop(1, 'rgba(135, 105, 75, 0.65)');
+    ctx.fillStyle = wetGrad;
+    ctx.fill();
+
+    // ───────────────────────────────────────────────────────────
+    // 4. CRASHING TURBULENT WHITE WAVE FOAM (Dense Multi-layer Froth)
+    // ───────────────────────────────────────────────────────────
+    // Foam shadow beneath breaking wave crest
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const xN = i / steps;
+      const yN = coastBaseY(xN, time) + 0.018;
+      ctx[i === 0 ? 'moveTo' : 'lineTo'](xN * W, yN * H);
+    }
+    for (let i = steps; i >= 0; i--) {
+      const xN = i / steps;
+      const yN = coastBaseY(xN, time) + 0.052;
+      ctx.lineTo(xN * W, yN * H);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0, 140, 160, 0.35)';
+    ctx.fill();
+
+    // 4 Layered Wave Foam Crests (Dense foaming crest as in ref-bg.png)
+    const foamBands = [
+      { offset: -0.008, width: 0.048, alpha: 0.96, freq: 8.5 },
+      { offset: 0.012,  width: 0.038, alpha: 0.88, freq: 11.2 },
+      { offset: 0.032,  width: 0.028, alpha: 0.65, freq: 14.5 },
+      { offset: 0.048,  width: 0.020, alpha: 0.42, freq: 18.0 },
+    ];
+
+    foamBands.forEach((band, bIdx) => {
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const xN = i / steps;
+        const wobble = Math.sin(xN * band.freq + time * 1.6 + bIdx) * 0.009
+                     + Math.cos(xN * 16.0 - time * 2.2) * 0.004;
+        const yN = coastBaseY(xN, time) + band.offset + wobble;
+        ctx[i === 0 ? 'moveTo' : 'lineTo'](xN * W, yN * H);
+      }
+      for (let i = steps; i >= 0; i--) {
+        const xN = i / steps;
+        const wobble = Math.sin(xN * (band.freq + 2) + time * 1.8 + bIdx) * 0.008;
+        const yN = coastBaseY(xN, time) + band.offset + band.width + wobble;
+        ctx.lineTo(xN * W, yN * H);
+      }
+      ctx.closePath();
+      ctx.fillStyle = `rgba(255, 255, 255, ${band.alpha})`;
+      ctx.fill();
+    });
+
+    // ───────────────────────────────────────────────────────────
+    // 5. SEA FOAM LACE & CELL BUBBLE NETWORKS (Organic Froth Web)
+    // ───────────────────────────────────────────────────────────
+    ctx.save();
+    // Clusters of bubble cells in the back-wash
+    const BUBBLE_COUNT = 65;
+    for (let i = 0; i < BUBBLE_COUNT; i++) {
+      const xN = ((i * 7331 + 41) % 100) / 100;
+      const baseCoast = coastBaseY(xN, time);
+      const distFromCrest = 0.015 + ((i * 3571) % 65) / 1000;
+      const bubY = (baseCoast + distFromCrest) * H + Math.sin(time * 1.8 + i) * 6;
+      const bubX = xN * W + Math.cos(time + i * 2) * 5;
+      const bubR = 2.5 + ((i * 911) % 6) + Math.sin(time * 2 + i) * 1.2;
+
+      // Foam bubble with clear water center
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.45 + (i % 3) * 0.2})`;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(bubX, bubY, Math.max(1, bubR), 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Dense bubble fill
+      if (i % 2 === 0) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.40)';
+        ctx.fill();
+      }
+    }
+
+    // Froth spray dots on sand edge
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
+    for (let i = 0; i < 48; i++) {
+      const xN = ((i * 5179 + time * 8) % W) / W;
+      const sprayY = (coastBaseY(xN, time) - 0.012 + Math.sin(time * 2 + i * 3) * 0.016) * H;
+      const sprayX = xN * W;
+      const r = 1.2 + Math.sin(time * 3 + i) * 0.8;
+      ctx.beginPath();
+      ctx.arc(sprayX, sprayY, Math.max(0.6, r), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // ───────────────────────────────────────────────────────────
+    // 6. INTERACTIVE WATER RIPPLES ON POINTER MOVE
+    // ───────────────────────────────────────────────────────────
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const rip = ripples[i];
+      rip.r += 0.8;
+      rip.alpha *= 0.95;
+      if (rip.r >= rip.maxR || rip.alpha < 0.02) {
+        ripples.splice(i, 1);
+        continue;
+      }
+      ctx.strokeStyle = `rgba(255, 255, 255, ${rip.alpha})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(rip.x, rip.y, rip.r * 1.8, rip.r * 0.8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // ───────────────────────────────────────────────────────────
+    // 7. VINTAGE PIRATE DOODLE DETAILS ON SHORE (Compass & Palm)
+    // ───────────────────────────────────────────────────────────
+    ctx.save();
+    ctx.strokeStyle = 'rgba(40, 25, 15, 0.18)';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Palm tree on top-right beach
+    const palmX = W * 0.89;
+    const palmBaseY = (coastBaseY(0.89, time) - 0.08) * H;
+    if (palmBaseY > 30) {
+      // Trunk
+      ctx.beginPath();
+      ctx.moveTo(palmX, palmBaseY);
+      ctx.quadraticCurveTo(palmX - 12, palmBaseY - 45, palmX + 8, palmBaseY - 85);
+      ctx.stroke();
+      // Fronds
+      const fBase = palmBaseY - 85;
+      [[-28, -18], [24, -20], [-18, -32], [22, -28], [-4, -36]].forEach(([dx, dy]) => {
+        ctx.beginPath();
+        ctx.moveTo(palmX + 8, fBase);
+        ctx.quadraticCurveTo(palmX + dx, fBase + dy * 0.6, palmX + dx * 1.8, fBase + dy * 0.8);
+        ctx.stroke();
+      });
+    }
+
+    // Gentle mini starfish doodle on sand
+    const starX = W * 0.16;
+    const starY = (coastBaseY(0.16, time) - 0.09) * H;
+    if (starY > 20) {
+      ctx.strokeStyle = 'rgba(215, 60, 60, 0.28)';
+      ctx.fillStyle = 'rgba(235, 90, 80, 0.22)';
+      ctx.beginPath();
+      for (let s = 0; s < 5; s++) {
+        const a1 = (s * Math.PI * 2) / 5 - Math.PI / 2;
+        const a2 = a1 + Math.PI / 5;
+        const r1 = 12, r2 = 5;
+        ctx[s === 0 ? 'moveTo' : 'lineTo'](starX + Math.cos(a1) * r1, starY + Math.sin(a1) * r1);
+        ctx.lineTo(starX + Math.cos(a2) * r2, starY + Math.sin(a2) * r2);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  if (!calm) {
+    let t = 0;
+    (function loopBeach() {
+      t += 0.016;
+      drawBeach(t);
+      requestAnimationFrame(loopBeach);
+    })();
+  } else {
+    drawBeach(0);
+  }
+})();
+
+/* ─────────────────────────────────────────────────────────────
    2. Custom Interactive Doodle Cursor
    ───────────────────────────────────────────────────────────── */
 const cursor = $('#customCursor');
@@ -57,6 +418,13 @@ let tiltX = 0, tiltY = 0, liftZ = 0;
 let normMouseX = 0, normMouseY = 0;
 
 head.addEventListener('pointerdown', e => {
+  if (e.button === 2) {
+    // Playful 3D spring tilt kick on right click
+    vx += (Math.random() - 0.5) * 35;
+    vy += -25;
+    tilt += (Math.random() - 0.5) * 25;
+    return;
+  }
   if (e.button !== 0) return;
   grab = { dx: e.clientX - x, dy: e.clientY - y };
   head.setPointerCapture(e.pointerId);
@@ -219,8 +587,13 @@ $$('.wave').forEach(el => {
 });
 
 /* ─────────────────────────────────────────────────────────────
-   8. Underworld: Glowing Pirate Treasure Parchment Map & Embers
+   8. Underworld: Glowing Antique Pirate Treasure Map (Right-Click Reveal)
    ───────────────────────────────────────────────────────────── */
+// Prevent browser context menu globally for smooth right-click interactions
+window.addEventListener('contextmenu', e => {
+  e.preventDefault();
+});
+
 const under = $('#underworld');
 const uctx = under.getContext('2d');
 const mask = document.createElement('canvas');
@@ -229,8 +602,13 @@ const spot = $('.head-spot');
 const skull = new Image();
 skull.src = 'skull.svg';
 
-const TILE = 72, GAP = 5, LEVELS = 8, SIDE = TILE - GAP;
-let W = 0, H = 0, dpr = 1, cols = 0, rows = 0, heat, glow, burn = null, burning = false;
+let W = 0, H = 0, dpr = 1;
+let isRightRevealing = false;
+let curRevX = 0, curRevY = 0, lastRevX = null, lastRevY = null;
+let isRevealingActive = false;
+let fadeFrames = 0;
+const FADE_TOTAL = 56;
+
 const flames = [];
 const sparks = [];
 
@@ -238,135 +616,539 @@ const sparks = [];
 const mapCanvas = document.createElement('canvas');
 const mapCtx = mapCanvas.getContext('2d');
 
+function drawCompassRose(ctx, cx, cy, rad) {
+  ctx.save();
+  // Outer circle with degree marks
+  ctx.strokeStyle = '#4e2f17';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rad * 0.88, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Degree ticks
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 16) {
+    const isMajor = (a % (Math.PI / 4) < 0.01);
+    const r1 = isMajor ? rad * 0.76 : rad * 0.84;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+    ctx.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
+    ctx.stroke();
+  }
+
+  // 8 Major Points (alternating filled & parchment)
+  const pts = 8;
+  for (let i = 0; i < pts; i++) {
+    const a = (i * Math.PI * 2) / pts - Math.PI / 2;
+    const aLeft = a - Math.PI / pts;
+    const aRight = a + Math.PI / pts;
+    const rTip = i % 2 === 0 ? rad * 0.84 : rad * 0.62;
+    const rInner = rad * 0.22;
+
+    // Left half (dark sepia)
+    ctx.fillStyle = '#3c210e';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * rTip, cy + Math.sin(a) * rTip);
+    ctx.lineTo(cx + Math.cos(aLeft) * rInner, cy + Math.sin(aLeft) * rInner);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Right half (light parchment)
+    ctx.fillStyle = '#faecd6';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * rTip, cy + Math.sin(a) * rTip);
+    ctx.lineTo(cx + Math.cos(aRight) * rInner, cy + Math.sin(aRight) * rInner);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // North Fleur-de-lis / arrow
+  ctx.fillStyle = '#c41e1e';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - rad * 0.95);
+  ctx.lineTo(cx - 7, cy - rad * 0.75);
+  ctx.lineTo(cx, cy - rad * 0.8);
+  ctx.lineTo(cx + 7, cy - rad * 0.75);
+  ctx.closePath();
+  ctx.fill();
+
+  // Cardinal letters
+  ctx.font = "bold 19px 'Patrick Hand SC', cursive";
+  ctx.fillStyle = '#3a1e0b';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('N', cx, cy - rad - 14);
+  ctx.fillText('S', cx, cy + rad + 14);
+  ctx.fillText('E', cx + rad + 15, cy);
+  ctx.fillText('W', cx - rad - 15, cy);
+
+  ctx.restore();
+}
+
+function drawTreasureIsland(ctx, ix, iy) {
+  ctx.save();
+  ctx.translate(ix, iy);
+
+  // Shallow reef buffer (dashed coastline)
+  ctx.strokeStyle = 'rgba(100, 60, 25, 0.35)';
+  ctx.lineWidth = 1.8;
+  ctx.setLineDash([4, 6]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 150, 95, 0.15, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Island mass
+  ctx.fillStyle = '#ddbe89';
+  ctx.strokeStyle = '#4a2c15';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-110, -20);
+  ctx.bezierCurveTo(-90, -75, -20, -70, 30, -55);
+  ctx.bezierCurveTo(85, -60, 125, -20, 115, 25);
+  ctx.bezierCurveTo(95, 75, 20, 68, -40, 55);
+  ctx.bezierCurveTo(-95, 60, -125, 20, -110, -20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Coastline ink hachures
+  ctx.strokeStyle = 'rgba(74, 44, 21, 0.4)';
+  ctx.lineWidth = 1.2;
+  for (let a = 0; a < Math.PI * 2; a += 0.22) {
+    const rx = Math.cos(a) * 95, ry = Math.sin(a) * 55;
+    ctx.beginPath();
+    ctx.moveTo(rx, ry);
+    ctx.lineTo(rx + Math.cos(a) * 10, ry + Math.sin(a) * 10);
+    ctx.stroke();
+  }
+
+  // Mountain ridges
+  ctx.strokeStyle = '#4a2c15';
+  ctx.lineWidth = 2.5;
+  const drawMtn = (mx, my, h) => {
+    ctx.beginPath();
+    ctx.moveTo(mx - h * 0.7, my + h * 0.5);
+    ctx.lineTo(mx, my - h * 0.5);
+    ctx.lineTo(mx + h * 0.7, my + h * 0.5);
+    ctx.stroke();
+    // Shading
+    ctx.beginPath();
+    ctx.moveTo(mx, my - h * 0.5);
+    ctx.lineTo(mx - h * 0.2, my + h * 0.5);
+    ctx.stroke();
+  };
+  drawMtn(-50, -10, 32);
+  drawMtn(-15, -22, 40);
+  drawMtn(25, -12, 34);
+
+  // Palm Trees
+  const drawPalm = (px, py) => {
+    ctx.strokeStyle = '#4a2c15';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.quadraticCurveTo(px + 8, py - 18, px + 12, py - 32);
+    ctx.stroke();
+    // Fronds
+    ctx.lineWidth = 2;
+    for (const [dx, dy] of [[-14, -6], [-10, 4], [14, -6], [10, 5], [0, -14]]) {
+      ctx.beginPath();
+      ctx.moveTo(px + 12, py - 32);
+      ctx.quadraticCurveTo(px + 12 + dx * 0.6, py - 32 + dy * 0.6, px + 12 + dx, py - 32 + dy);
+      ctx.stroke();
+    }
+  };
+  drawPalm(60, 15);
+  drawPalm(78, 22);
+
+  // Skull Rock doodle
+  ctx.font = "bold 20px 'Patrick Hand SC', cursive";
+  ctx.fillStyle = '#4a2c15';
+  ctx.textAlign = 'center';
+  ctx.fillText('Skull Rock', -20, 24);
+
+  // Crimson Red "X Marks the Spot"
+  ctx.strokeStyle = '#c81c1c';
+  ctx.lineWidth = 4.5;
+  ctx.beginPath();
+  ctx.moveTo(40, -5); ctx.lineTo(66, 20);
+  ctx.moveTo(66, -5); ctx.lineTo(40, 20);
+  ctx.stroke();
+
+  ctx.font = "bold 18px 'Patrick Hand SC', cursive";
+  ctx.fillStyle = '#c81c1c';
+  ctx.fillText('X', 53, -12);
+  ctx.font = "15px 'Patrick Hand SC', cursive";
+  ctx.fillStyle = '#4a2c15';
+  ctx.fillText('10,000 Doubloons', 53, 38);
+
+  ctx.restore();
+}
+
+function drawGalleon(ctx, gx, gy) {
+  ctx.save();
+  ctx.translate(gx, gy);
+
+  // Ship hull
+  ctx.fillStyle = '#5c381c';
+  ctx.strokeStyle = '#2b170a';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-55, -4);
+  ctx.bezierCurveTo(-45, 20, 40, 22, 65, 0);
+  ctx.lineTo(50, -12);
+  ctx.lineTo(-45, -12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Cannon ports
+  ctx.fillStyle = '#1c1c1c';
+  for (let cp = -25; cp <= 35; cp += 18) {
+    ctx.fillRect(cp, -2, 6, 6);
+  }
+
+  // 3 Masts
+  ctx.strokeStyle = '#2b170a';
+  ctx.lineWidth = 3;
+  const masts = [-24, 6, 36];
+  const heights = [55, 68, 50];
+  masts.forEach((mx, i) => {
+    const mh = heights[i];
+    ctx.beginPath();
+    ctx.moveTo(mx, -12);
+    ctx.lineTo(mx, -12 - mh);
+    ctx.stroke();
+
+    // Billowing sails
+    ctx.fillStyle = '#f8ecd6';
+    ctx.strokeStyle = '#2b170a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(mx - 15, -12 - mh * 0.3);
+    ctx.quadraticCurveTo(mx, -12 - mh * 0.45, mx + 15, -12 - mh * 0.3);
+    ctx.lineTo(mx + 13, -12 - mh * 0.85);
+    ctx.quadraticCurveTo(mx, -12 - mh * 0.95, mx - 13, -12 - mh * 0.85);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  // Jolly Roger Pirate Flag on main mast
+  ctx.fillStyle = '#1c1c1c';
+  ctx.fillRect(6, -82, 18, 12);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(14, -76, 2.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Waves beneath hull
+  ctx.strokeStyle = 'rgba(74, 44, 21, 0.45)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(-40, 20, 14, Math.PI, 0);
+  ctx.arc(-12, 20, 14, Math.PI, 0);
+  ctx.arc(16, 20, 14, Math.PI, 0);
+  ctx.arc(44, 20, 14, Math.PI, 0);
+  ctx.stroke();
+
+  // Ship Name
+  ctx.font = "italic 16px 'Patrick Hand SC', cursive";
+  ctx.fillStyle = '#4a2c15';
+  ctx.textAlign = 'center';
+  ctx.fillText('The Black Pearl', 0, 38);
+
+  ctx.restore();
+}
+
+function drawKraken(ctx, kx, ky) {
+  ctx.save();
+  ctx.translate(kx, ky);
+
+  ctx.strokeStyle = '#422410';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+
+  const tentacles = [
+    { x: -35, cx1: -45, cy1: -35, cx2: -20, cy2: -65, ex: -30, ey: -85 },
+    { x: -12, cx1: -15, cy1: -45, cx2: 10, cy2: -80, ex: -5, ey: -105 },
+    { x: 14, cx1: 18, cy1: -40, cx2: 38, cy2: -75, ex: 25, ey: -95 },
+    { x: 38, cx1: 48, cy1: -30, cx2: 60, cy2: -55, ex: 72, ey: -70 }
+  ];
+
+  tentacles.forEach(t => {
+    ctx.beginPath();
+    ctx.moveTo(t.x, 0);
+    ctx.bezierCurveTo(t.cx1, t.cy1, t.cx2, t.cy2, t.ex, t.ey);
+    ctx.stroke();
+
+    // Suction cups
+    ctx.fillStyle = '#f5e3c6';
+    ctx.lineWidth = 2;
+    for (let f = 0.3; f <= 0.85; f += 0.22) {
+      const sx = t.x + (t.ex - t.x) * f + 4;
+      const sy = t.ey * f + 2;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  });
+
+  // Sea splashes
+  ctx.strokeStyle = 'rgba(74, 44, 21, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 48, Math.PI * 0.9, Math.PI * 2.1);
+  ctx.stroke();
+
+  ctx.font = "bold 18px 'Patrick Hand SC', cursive";
+  ctx.fillStyle = '#c41e1e';
+  ctx.textAlign = 'center';
+  ctx.fillText('Here be Monsters!', 10, 24);
+
+  ctx.restore();
+}
+
+function drawMapTitleBanner(ctx, bx, by) {
+  ctx.save();
+  ctx.translate(bx, by);
+
+  // Scrolled ribbon banner
+  ctx.fillStyle = '#f5e1bf';
+  ctx.strokeStyle = '#462711';
+  ctx.lineWidth = 2.5;
+
+  const bw = 210, bh = 42;
+  // Banner body
+  ctx.beginPath();
+  ctx.moveTo(-bw, -bh / 2);
+  ctx.quadraticCurveTo(0, -bh / 2 + 8, bw, -bh / 2);
+  ctx.lineTo(bw, bh / 2);
+  ctx.quadraticCurveTo(0, bh / 2 + 8, -bw, bh / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Ribbon notch ends
+  for (const dir of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(dir * bw, -bh / 2 + 6);
+    ctx.lineTo(dir * (bw + 26), 0);
+    ctx.lineTo(dir * bw, bh / 2 - 6);
+    ctx.lineTo(dir * (bw + 12), 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Text inside banner
+  ctx.font = "bold 22px 'Patrick Hand SC', cursive";
+  ctx.fillStyle = '#3a1f0d';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('~ CHARTS OF CAPTAIN BADHYU ~', 0, 0);
+
+  ctx.font = "14px 'Patrick Hand SC', cursive";
+  ctx.fillStyle = '#6e4522';
+  ctx.fillText('Anno 2026 · Seven Seas of Code', 0, 26);
+
+  ctx.restore();
+}
+
 function renderTreasureMap() {
   mapCanvas.width = W * dpr;
   mapCanvas.height = H * dpr;
   mapCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  // Deep rich antique parchment background (warm dark brown, not harsh pitch black)
-  mapCtx.fillStyle = '#1e1412';
+  // Warm rich antique parchment background
+  const bgGrad = mapCtx.createRadialGradient(W * 0.5, H * 0.5, Math.min(W, H) * 0.15, W * 0.5, H * 0.5, Math.max(W, H) * 0.85);
+  bgGrad.addColorStop(0, '#f5e4c6');
+  bgGrad.addColorStop(0.5, '#ebd0a2');
+  bgGrad.addColorStop(0.85, '#d6b37a');
+  bgGrad.addColorStop(1, '#a88144');
+  mapCtx.fillStyle = bgGrad;
   mapCtx.fillRect(0, 0, W, H);
 
-  // Subtle paper grain vignette
-  const grad = mapCtx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.2, W / 2, H / 2, Math.max(W, H) * 0.8);
-  grad.addColorStop(0, '#261b18');
-  grad.addColorStop(1, '#140c0b');
-  mapCtx.fillStyle = grad;
-  mapCtx.fillRect(0, 0, W, H);
+  // Antique coffee & rum stain rings
+  mapCtx.save();
+  mapCtx.strokeStyle = 'rgba(120, 75, 25, 0.08)';
+  mapCtx.lineWidth = 14;
+  mapCtx.beginPath();
+  mapCtx.arc(W * 0.28, H * 0.72, 75, 0, Math.PI * 2);
+  mapCtx.stroke();
+  mapCtx.lineWidth = 6;
+  mapCtx.beginPath();
+  mapCtx.arc(W * 0.74, H * 0.26, 90, 0, Math.PI * 2);
+  mapCtx.stroke();
+  mapCtx.restore();
 
-  // Hand-drawn doodle nautical chart lines
-  mapCtx.strokeStyle = 'rgba(245, 222, 179, 0.22)';
-  mapCtx.lineWidth = 1.5;
-  mapCtx.setLineDash([8, 12]);
+  // Antique map border with coordinate ticks
+  mapCtx.save();
+  mapCtx.strokeStyle = '#523216';
+  mapCtx.lineWidth = 3;
+  mapCtx.strokeRect(18, 18, W - 36, H - 36);
+  mapCtx.lineWidth = 1.2;
+  mapCtx.strokeRect(24, 24, W - 48, H - 48);
 
-  // Compass rose lines
-  const cx = W * 0.2, cy = H * 0.3;
-  for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
-    mapCtx.beginPath();
-    mapCtx.moveTo(cx, cy);
-    mapCtx.lineTo(cx + Math.cos(a) * 180, cy + Math.sin(a) * 180);
-    mapCtx.stroke();
+  mapCtx.beginPath();
+  for (let x = 40; x < W - 40; x += 40) {
+    mapCtx.moveTo(x, 18); mapCtx.lineTo(x, 24);
+    mapCtx.moveTo(x, H - 18); mapCtx.lineTo(x, H - 24);
   }
-
-  // Compass star in corner
-  mapCtx.beginPath();
-  mapCtx.arc(cx, cy, 32, 0, Math.PI * 2);
+  for (let y = 40; y < H - 40; y += 40) {
+    mapCtx.moveTo(18, y); mapCtx.lineTo(24, y);
+    mapCtx.moveTo(W - 18, y); mapCtx.lineTo(W - 24, y);
+  }
   mapCtx.stroke();
-  mapCtx.setLineDash([]);
-  mapCtx.font = "16px 'Patrick Hand SC', cursive";
-  mapCtx.fillStyle = 'rgba(245, 222, 179, 0.45)';
-  mapCtx.fillText('N', cx - 5, cy - 40);
+  mapCtx.restore();
 
-  // Treasure Island doodle in corner
-  mapCtx.strokeStyle = 'rgba(245, 222, 179, 0.35)';
-  mapCtx.lineWidth = 2;
-  mapCtx.beginPath();
-  mapCtx.ellipse(W * 0.8, H * 0.75, 110, 65, 0.2, 0, Math.PI * 2);
-  mapCtx.stroke();
+  // Rhumb navigation lines (golden brown dashed rays)
+  mapCtx.save();
+  mapCtx.strokeStyle = 'rgba(130, 80, 32, 0.22)';
+  mapCtx.lineWidth = 1.2;
+  mapCtx.setLineDash([8, 14]);
+  const rhumbHubs = [
+    { x: W * 0.18, y: H * 0.25 },
+    { x: W * 0.82, y: H * 0.72 },
+    { x: W * 0.5, y: H * 0.88 }
+  ];
+  rhumbHubs.forEach(hub => {
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+      mapCtx.beginPath();
+      mapCtx.moveTo(hub.x, hub.y);
+      mapCtx.lineTo(hub.x + Math.cos(a) * Math.max(W, H), hub.y + Math.sin(a) * Math.max(W, H));
+      mapCtx.stroke();
+    }
+  });
+  mapCtx.restore();
 
-  // "X marks the spot"
-  mapCtx.strokeStyle = '#ff3344';
-  mapCtx.lineWidth = 3.5;
-  mapCtx.beginPath();
-  mapCtx.moveTo(W * 0.79 - 14, H * 0.75 - 14);
-  mapCtx.lineTo(W * 0.79 + 14, H * 0.75 + 14);
-  mapCtx.moveTo(W * 0.79 + 14, H * 0.75 - 14);
-  mapCtx.lineTo(W * 0.79 - 14, H * 0.75 + 14);
-  mapCtx.stroke();
+  // 16-point Antique Compass Rose
+  drawCompassRose(mapCtx, W * 0.18, H * 0.26, 68);
 
-  // Sea waves doodle
-  mapCtx.strokeStyle = 'rgba(245, 222, 179, 0.2)';
-  mapCtx.lineWidth = 2;
+  // Treasure Island ("Skull Isle")
+  drawTreasureIsland(mapCtx, W * 0.78, H * 0.68);
+
+  // The Black Pearl Galleon
+  drawGalleon(mapCtx, W * 0.28, H * 0.64);
+
+  // Giant Sea Kraken
+  drawKraken(mapCtx, W * 0.82, H * 0.26);
+
+  // Decorative Title Banner
+  drawMapTitleBanner(mapCtx, W * 0.5, 52);
+
+  // Depth soundings & sea waves
+  mapCtx.save();
+  mapCtx.font = "14px 'Patrick Hand SC', cursive";
+  mapCtx.fillStyle = 'rgba(90, 52, 22, 0.42)';
+  const soundings = [
+    { x: W * 0.42, y: H * 0.35, d: '18' },
+    { x: W * 0.58, y: H * 0.28, d: '24' },
+    { x: W * 0.38, y: H * 0.82, d: '14' },
+    { x: W * 0.62, y: H * 0.84, d: '32' },
+    { x: W * 0.12, y: H * 0.52, d: '8' },
+    { x: W * 0.92, y: H * 0.52, d: '45' }
+  ];
+  soundings.forEach(s => mapCtx.fillText(`${s.d} fm`, s.x, s.y));
+
+  // Sea wave crests
+  mapCtx.strokeStyle = 'rgba(90, 52, 22, 0.25)';
+  mapCtx.lineWidth = 1.8;
   const drawWave = (wx, wy) => {
     mapCtx.beginPath();
     mapCtx.arc(wx, wy, 16, Math.PI, 0);
     mapCtx.arc(wx + 32, wy, 16, Math.PI, 0);
     mapCtx.stroke();
   };
-  drawWave(W * 0.45, H * 0.85);
-  drawWave(W * 0.15, H * 0.75);
-  drawWave(W * 0.82, H * 0.25);
+  drawWave(W * 0.46, H * 0.46);
+  drawWave(W * 0.56, H * 0.74);
+  drawWave(W * 0.12, H * 0.78);
+  drawWave(W * 0.86, H * 0.86);
+  mapCtx.restore();
 }
-
-// Tile dither with warm glowing borders
-const dither = [0, 1].map(() => {
-  const n = Math.ceil(SIDE / 2), noise = Array.from({ length: n * n }, Math.random);
-  return Array.from({ length: LEVELS + 1 }, (_, level) => {
-    const c = document.createElement('canvas');
-    c.width = c.height = SIDE;
-    const g = c.getContext('2d');
-
-    // Fill grain
-    noise.forEach((v, i) => {
-      if (v < level / LEVELS) {
-        g.fillStyle = '#fff';
-        g.fillRect((i % n) * 2, (i / n | 0) * 2, 2, 2);
-      }
-    });
-
-    g.globalCompositeOperation = 'destination-in';
-    g.beginPath();
-    g.roundRect(0, 0, SIDE, SIDE, 14);
-    g.fill();
-    return c;
-  });
-});
 
 function fit() {
   dpr = Math.min(devicePixelRatio || 1, 2);
   W = innerWidth; H = innerHeight;
   for (const c of [under, mask]) { c.width = W * dpr; c.height = H * dpr; }
-  cols = Math.ceil(W / TILE); rows = Math.ceil(H / TILE);
-  heat = new Float32Array(cols * rows);
-  glow = new Float32Array(cols * rows);
   renderTreasureMap();
 }
 fit();
 addEventListener('resize', fit);
 
-function heatAt(px, py) {
-  const r = TILE * 1.9;
-  for (let row = Math.max(0, (py - r) / TILE | 0); row <= Math.min(rows - 1, (py + r) / TILE | 0); row++) {
-    for (let col = Math.max(0, (px - r) / TILE | 0); col <= Math.min(cols - 1, (px + r) / TILE | 0); col++) {
-      const d = Math.hypot((col + 0.5) * TILE - px, (row + 0.5) * TILE - py);
-      const i = row * cols + col;
-      heat[i] = Math.max(heat[i], Math.min(1.6, (r - d) / (r * 0.4)));
-    }
-  }
+function drawSparkleStar(ctx, cx, cy, size, color) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - size);
+  ctx.quadraticCurveTo(cx, cy, cx + size, cy);
+  ctx.quadraticCurveTo(cx, cy, cx, cy + size);
+  ctx.quadraticCurveTo(cx, cy, cx - size, cy);
+  ctx.quadraticCurveTo(cx, cy, cx, cy - size);
+  ctx.fill();
+  ctx.restore();
+}
 
-  // Spawn burning sparks at drag location
-  if (Math.random() < 0.6) {
+function emitSparks(px, py, count = 2) {
+  for (let k = 0; k < count; k++) {
+    if (sparks.length > 95) sparks.shift();
+    const isStar = Math.random() < 0.28;
     sparks.push({
-      x: px + (Math.random() - 0.5) * 24,
-      y: py + (Math.random() - 0.5) * 24,
-      vx: (Math.random() - 0.5) * 2,
-      vy: -(1.5 + Math.random() * 3),
-      life: 1,
-      decay: 0.02 + Math.random() * 0.03,
-      size: 2.5 + Math.random() * 3,
-      color: Math.random() > 0.4 ? '#ff9900' : '#ffdd44'
+      x: px + (Math.random() - 0.5) * 32,
+      y: py + (Math.random() - 0.5) * 32,
+      vx: (Math.random() - 0.5) * 2.6,
+      vy: -(1.4 + Math.random() * 2.8),
+      life: 1.0,
+      decay: 0.018 + Math.random() * 0.022,
+      size: isStar ? (3.5 + Math.random() * 3.5) : (2 + Math.random() * 3),
+      isStar,
+      ph: Math.random() * Math.PI * 2,
+      color: Math.random() > 0.4 ? '#ffbe3b' : (Math.random() > 0.5 ? '#ffe985' : '#ff7a18')
     });
   }
+}
+
+// Organic feathered stamp onto mask canvas
+function stampRevealMask(px, py) {
+  mctx.save();
+  mctx.setTransform(1, 0, 0, 1, 0, 0);
+  mctx.globalCompositeOperation = 'source-over';
+
+  const rad = 72 * dpr;
+  const g = mctx.createRadialGradient(px * dpr, py * dpr, 0, px * dpr, py * dpr, rad);
+  g.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  g.addColorStop(0.65, 'rgba(255, 255, 255, 0.96)');
+  g.addColorStop(0.85, 'rgba(255, 255, 255, 0.42)');
+  g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  mctx.fillStyle = g;
+  mctx.beginPath();
+  mctx.arc(px * dpr, py * dpr, rad, 0, Math.PI * 2);
+  mctx.fill();
+
+  // 2 subtle organic secondary stamps for natural feathered/torn edge
+  for (let i = 0; i < 2; i++) {
+    const ox = px + (Math.random() - 0.5) * 28;
+    const oy = py + (Math.random() - 0.5) * 28;
+    const sRad = (rad * (0.6 + Math.random() * 0.3));
+    const sg = mctx.createRadialGradient(ox * dpr, oy * dpr, 0, ox * dpr, oy * dpr, sRad);
+    sg.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+    sg.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    mctx.fillStyle = sg;
+    mctx.beginPath();
+    mctx.arc(ox * dpr, oy * dpr, sRad, 0, Math.PI * 2);
+    mctx.fill();
+  }
+
+  mctx.restore();
 }
 
 const TONGUES = [[70, 0.6], [130, 0.9], [200, 1.2], [265, 0.95], [330, 0.65]];
@@ -429,76 +1211,133 @@ function stillMe() {
 }
 
 function underworld(now) {
-  if (burn) heatAt(burn.x, burn.y);
-  let alive = !!burn || sparks.length > 0;
-  const set = dither[(now / 130 | 0) % 2];
-  mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  mctx.imageSmoothingEnabled = false;
-  mctx.clearRect(0, 0, W, H);
-
-  for (let i = 0; i < heat.length; i++) {
-    heat[i] = Math.max(0, heat[i] - 0.012);
-    glow[i] += (heat[i] - glow[i]) * 0.2;
-    const level = Math.round(Math.min(1, glow[i]) * LEVELS);
-    if (!level) continue;
-    alive = true;
-    mctx.drawImage(set[level], (i % cols) * TILE + GAP / 2, (i / cols | 0) * TILE + GAP / 2);
+  if (isRightRevealing) {
+    // Keep ambient embers and subtle pulse at cursor
+    emitSparks(curRevX, curRevY, 1);
+  } else {
+    fadeFrames--;
+    mctx.save();
+    mctx.setTransform(1, 0, 0, 1, 0, 0);
+    mctx.globalCompositeOperation = 'destination-out';
+    mctx.fillStyle = 'rgba(0, 0, 0, 0.048)';
+    mctx.fillRect(0, 0, mask.width, mask.height);
+    mctx.restore();
   }
 
-  uctx.globalCompositeOperation = 'source-over';
+  // 1. Draw base antique treasure map onto uctx
   uctx.setTransform(1, 0, 0, 1, 0, 0);
+  uctx.globalCompositeOperation = 'source-over';
   uctx.clearRect(0, 0, W * dpr, H * dpr);
-
-  // Draw rich Antique Treasure Map
   uctx.drawImage(mapCanvas, 0, 0);
 
-  // Draw Glowing Skull & label
+  // 2. Draw skull & "still me →" at medal position
   uctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   drawSkull(now);
   stillMe();
 
-  // Draw flying sparks along burn path
-  for (let i = sparks.length; i--;) {
-    const s = sparks[i];
-    if ((s.life -= s.decay) <= 0) { sparks.splice(i, 1); continue; }
-    s.x += s.vx;
-    s.y += s.vy;
-    uctx.fillStyle = s.color;
-    uctx.beginPath();
-    uctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
-    uctx.fill();
-  }
-
-  // Mask out revealed areas with dither tiles
+  // 3. Mask out non-revealed regions with mask canvas
   uctx.setTransform(1, 0, 0, 1, 0, 0);
   uctx.globalCompositeOperation = 'destination-in';
   uctx.drawImage(mask, 0, 0);
 
-  if (alive) requestAnimationFrame(underworld);
-  else burning = false;
+  // 4. Draw golden glow aura & flying sparks on top
+  uctx.globalCompositeOperation = 'source-over';
+  uctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  if (isRightRevealing) {
+    const flare = uctx.createRadialGradient(curRevX, curRevY, 8, curRevX, curRevY, 85);
+    flare.addColorStop(0, 'rgba(255, 220, 90, 0.45)');
+    flare.addColorStop(0.4, 'rgba(255, 150, 30, 0.22)');
+    flare.addColorStop(0.8, 'rgba(255, 80, 10, 0.06)');
+    flare.addColorStop(1, 'rgba(255, 50, 0, 0)');
+    uctx.fillStyle = flare;
+    uctx.beginPath();
+    uctx.arc(curRevX, curRevY, 85, 0, Math.PI * 2);
+    uctx.fill();
+  }
+
+  // Draw floating golden sand particles and twinkle stars
+  for (let i = sparks.length; i--;) {
+    const s = sparks[i];
+    if ((s.life -= s.decay) <= 0) { sparks.splice(i, 1); continue; }
+    s.x += s.vx + Math.sin(now / 150 + s.ph) * 0.7;
+    s.y += s.vy;
+    const currentSize = s.size * (0.3 + s.life * 0.7);
+    uctx.save();
+    uctx.globalAlpha = Math.min(1, s.life * 1.2);
+    if (s.isStar) {
+      drawSparkleStar(uctx, s.x, s.y, currentSize, s.color);
+    } else {
+      uctx.fillStyle = s.color;
+      uctx.shadowColor = s.color;
+      uctx.shadowBlur = 6;
+      uctx.beginPath();
+      uctx.arc(s.x, s.y, currentSize, 0, Math.PI * 2);
+      uctx.fill();
+    }
+    uctx.restore();
+  }
+
+  const shouldContinue = isRightRevealing || fadeFrames > 0 || sparks.length > 0;
+  if (shouldContinue) {
+    requestAnimationFrame(underworld);
+  } else {
+    mctx.clearRect(0, 0, mask.width, mask.height);
+    uctx.clearRect(0, 0, W * dpr, H * dpr);
+    isRevealingActive = false;
+  }
 }
 
-// Background scratch / burn trigger
+// Right-Click Reveal Trigger & Gestures
 addEventListener('pointerdown', e => {
-  if (e.button !== 0 || location.hash === '#about' || e.target.closest('#head, #pull, .about, a, button')) return;
-  // If Three.js grabbed a 3D loot, don't trigger burn
-  if (window.__threeGrabbed) return;
+  if (e.button !== 2 || location.hash === '#about') return;
+  if (e.target.closest('.panel, .sign')) return;
 
-  burn = { x: e.clientX, y: e.clientY };
-  heatAt(burn.x, burn.y);
-  if (!burning) { burning = true; requestAnimationFrame(underworld); }
+  isRightRevealing = true;
+  curRevX = lastRevX = e.clientX;
+  curRevY = lastRevY = e.clientY;
+  fadeFrames = FADE_TOTAL;
+
+  stampRevealMask(curRevX, curRevY);
+  emitSparks(curRevX, curRevY, 6);
+
+  if (cursor) cursor.classList.add('revealing');
+
+  if (!isRevealingActive) {
+    isRevealingActive = true;
+    requestAnimationFrame(underworld);
+  }
 });
 
 addEventListener('pointermove', e => {
-  if (!burn) return;
-  const dx = e.clientX - burn.x, dy = e.clientY - burn.y;
-  const steps = Math.ceil(Math.hypot(dx, dy) / (TILE / 3));
-  for (let k = 1; k <= steps; k++) heatAt(burn.x + dx * k / steps, burn.y + dy * k / steps);
-  burn.x = e.clientX; burn.y = e.clientY;
+  if (!isRightRevealing) return;
+
+  const dx = e.clientX - lastRevX;
+  const dy = e.clientY - lastRevY;
+  const dist = Math.hypot(dx, dy);
+  const step = Math.max(1, Math.ceil(dist / 10));
+
+  for (let k = 1; k <= step; k++) {
+    const interX = lastRevX + dx * (k / step);
+    const interY = lastRevY + dy * (k / step);
+    stampRevealMask(interX, interY);
+  }
+
+  emitSparks(e.clientX, e.clientY, 2);
+  curRevX = lastRevX = e.clientX;
+  curRevY = lastRevY = e.clientY;
 }, { passive: true });
 
 for (const type of ['pointerup', 'pointercancel', 'blur']) {
-  addEventListener(type, () => { burn = null; });
+  addEventListener(type, e => {
+    if (e && e.button !== undefined && e.button !== 2 && type === 'pointerup') return;
+    if (isRightRevealing) {
+      isRightRevealing = false;
+      lastRevX = null;
+      lastRevY = null;
+      if (cursor) cursor.classList.remove('revealing');
+    }
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -765,9 +1604,9 @@ function initThreeWorld() {
     }
   }, { passive: true });
 
-  // Pointer Down: Grab 3D coin or dice!
+  // Pointer Down: Grab 3D coin/dice on left click, playful spin flick on right click
   addEventListener('pointerdown', e => {
-    if (e.button !== 0 || e.target.closest('#head, #pull, .about, a, button')) return;
+    if (e.target.closest('#head, #pull, .about, a, button')) return;
 
     raycaster.setFromCamera(mouse3d, camera);
     const intersects = raycaster.intersectObjects(artifacts.map(a => a.mesh), false);
@@ -775,23 +1614,32 @@ function initThreeWorld() {
     if (intersects.length > 0) {
       const hit = artifacts.find(a => a.mesh === intersects[0].object);
       if (hit) {
-        grabbedArtifact = hit;
-        hit.isGrabbed = true;
-        window.__threeGrabbed = true; // Signals Underworld not to burn background
+        if (e.button === 2) {
+          // Right-click on 3D loot: give it a playful spin flick and jump!
+          hit.spinImpulse.x += (Math.random() - 0.5) * 0.9 + 0.35;
+          hit.spinImpulse.y += (Math.random() - 0.5) * 0.9 + 0.45;
+          hit.springVel.z += 1.4;
+          return;
+        }
+        if (e.button === 0) {
+          grabbedArtifact = hit;
+          hit.isGrabbed = true;
+          window.__threeGrabbed = true;
 
-        // Set drag plane parallel to screen at object's Z depth
-        mousePlane.set(new THREE.Vector3(0, 0, 1), -hit.mesh.position.z);
-        const hitPt = new THREE.Vector3();
-        raycaster.ray.intersectPlane(mousePlane, hitPt);
-        hit.grabOffset.copy(hit.mesh.position).sub(hitPt);
-        lastGrabPos.copy(hitPt);
+          // Set drag plane parallel to screen at object's Z depth
+          mousePlane.set(new THREE.Vector3(0, 0, 1), -hit.mesh.position.z);
+          const hitPt = new THREE.Vector3();
+          raycaster.ray.intersectPlane(mousePlane, hitPt);
+          hit.grabOffset.copy(hit.mesh.position).sub(hitPt);
+          lastGrabPos.copy(hitPt);
 
-        // Spin burst on grab
-        hit.spinImpulse.x += (Math.random() - 0.5) * 0.4;
-        hit.spinImpulse.y += (Math.random() - 0.5) * 0.4;
+          // Spin burst on grab
+          hit.spinImpulse.x += (Math.random() - 0.5) * 0.4;
+          hit.spinImpulse.y += (Math.random() - 0.5) * 0.4;
 
-        if (cursor) cursor.classList.add('grabbing');
-        e.stopPropagation();
+          if (cursor) cursor.classList.add('grabbing');
+          e.stopPropagation();
+        }
       }
     }
   });
@@ -823,10 +1671,11 @@ function initThreeWorld() {
     requestAnimationFrame(animateThree);
     clock += 0.016;
 
-    // Check hover state
+    // Check hover state and expose to underworld
     raycaster.setFromCamera(mouse3d, camera);
     const intersects = raycaster.intersectObjects(artifacts.map(a => a.mesh), false);
     const hoveredMesh = intersects.length > 0 ? intersects[0].object : null;
+    window.__threeHovered = !!hoveredMesh;
 
     artifacts.forEach(item => {
       const isHit = item.mesh === hoveredMesh;

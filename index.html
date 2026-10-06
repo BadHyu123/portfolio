@@ -28,6 +28,9 @@
     </svg>
   </div>
 
+  <!-- Animated Beach Shoreline Background -->
+  <canvas id="beach-bg" class="beach-bg" aria-hidden="true"></canvas>
+
   <!-- 3D Interactive Floating World (Three.js WebGL) -->
   <canvas id="three-stage" class="three-stage" aria-hidden="true"></canvas>
 
@@ -150,11 +153,12 @@
     <ul class="hints boil" aria-hidden="true">
       <li>
         <svg viewBox="0 0 100 100">
-          <path d="M18 14 L44 40 M18 14 L20 30 M18 14 L34 16 M60 64 L44 40 M60 64 L60 84 M60 84 L50 98 M60 84 L72 98 M60 70 L40 46" />
-          <circle cx="62" cy="54" r="10" />
-          <path d="M50 46 Q62 34 74 46 Z" class="fill" />
+          <rect x="25" y="16" width="50" height="68" rx="24" fill="#fff" stroke="#1c1c1c" stroke-width="7" />
+          <line x1="50" y1="16" x2="50" y2="50" stroke="#1c1c1c" stroke-width="6" />
+          <line x1="25" y1="50" x2="75" y2="50" stroke="#1c1c1c" stroke-width="6" />
+          <path d="M50 16 L74 16 A 24 24 0 0 1 74 50 L50 50 Z" class="fill" />
         </svg>
-        drag
+        right-click
       </li>
       <li>
         <svg viewBox="0 0 100 100">
@@ -221,6 +225,92 @@
     </a>
 
     <div class="panel">
+      <!-- Antique Pirate Treasure Map Background Layer -->
+      <svg class="treasure-map-watermark" viewBox="0 0 700 900" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+        <g stroke="#8c6239" fill="none" opacity="0.32" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Rhumb navigational chart lines -->
+          <line x1="120" y1="180" x2="680" y2="400" stroke-width="1" stroke-dasharray="8 12" />
+          <line x1="120" y1="180" x2="350" y2="850" stroke-width="1" stroke-dasharray="8 12" />
+          <line x1="600" y1="150" x2="100" y2="700" stroke-width="1" stroke-dasharray="8 12" />
+          <line x1="550" y1="720" x2="150" y2="250" stroke-width="1" stroke-dasharray="8 12" />
+
+          <!-- Antique 16-point Compass Rose (Top-Right) -->
+          <g transform="translate(560, 160)">
+            <circle cx="0" cy="0" r="85" stroke-width="2.5" />
+            <circle cx="0" cy="0" r="75" stroke-width="1" stroke-dasharray="4 6" />
+            <circle cx="0" cy="0" r="28" stroke-width="2" />
+            <!-- Major compass points -->
+            <polygon points="0,-82 -12,-28 0,-6" fill="#8c6239" opacity="0.4" />
+            <polygon points="0,-82 12,-28 0,-6" fill="#5c3818" opacity="0.7" />
+            <polygon points="0,82 -12,28 0,6" fill="#5c3818" opacity="0.7" />
+            <polygon points="0,82 12,28 0,6" fill="#8c6239" opacity="0.4" />
+            <polygon points="82,0 28,-12 6,0" fill="#5c3818" opacity="0.7" />
+            <polygon points="82,0 28,12 6,0" fill="#8c6239" opacity="0.4" />
+            <polygon points="-82,0 -28,-12 -6,0" fill="#8c6239" opacity="0.4" />
+            <polygon points="-82,0 -28,12 -6,0" fill="#5c3818" opacity="0.7" />
+            <!-- Cardinal Letters -->
+            <text x="0" y="-92" font-size="22" font-family="'Patrick Hand SC', cursive" text-anchor="middle" fill="#5c3818" font-weight="bold">N</text>
+            <text x="0" y="108" font-size="20" font-family="'Patrick Hand SC', cursive" text-anchor="middle" fill="#5c3818">S</text>
+            <text x="100" y="7" font-size="20" font-family="'Patrick Hand SC', cursive" text-anchor="middle" fill="#5c3818">E</text>
+            <text x="-100" y="7" font-size="20" font-family="'Patrick Hand SC', cursive" text-anchor="middle" fill="#5c3818">W</text>
+            <circle cx="0" cy="0" r="4" fill="#5c3818" />
+          </g>
+
+          <!-- Skull Rock Island (Left-Center) -->
+          <g transform="translate(100, 480)">
+            <!-- Island coastlines -->
+            <path d="M-40 -30 C10 -60 80 -40 90 20 C100 80 40 90 -20 80 C-70 70 -80 -10 -40 -30 Z" stroke-width="3" fill="#ecd3a5" opacity="0.3" />
+            <path d="M-45 -35 C8 -67 85 -45 96 20 C107 85 43 96 -22 86 C-76 75 -86 -12 -45 -35 Z" stroke-width="1.5" stroke-dasharray="3 5" />
+            <!-- Palm tree on island -->
+            <path d="M40 0 Q30 -30 45 -50" stroke-width="3" />
+            <path d="M45 -50 Q20 -60 15 -45 M45 -50 Q55 -70 65 -50 M45 -50 Q70 -45 55 -35" stroke-width="2" />
+            <text x="15" y="105" font-size="18" font-family="'Patrick Hand SC', cursive" text-anchor="middle" fill="#5c3818">Skull Isle</text>
+          </g>
+
+          <!-- Pirate Galleon Ship (Bottom-Right) -->
+          <g transform="translate(540, 720)">
+            <path d="M-50 10 C-30 30 40 30 60 10 L50 -10 L-40 -10 Z" stroke-width="3" fill="#8c6239" opacity="0.3" />
+            <line x1="-15" y1="-10" x2="-15" y2="-60" stroke-width="2.5" />
+            <line x1="15" y1="-10" x2="15" y2="-70" stroke-width="2.5" />
+            <line x1="38" y1="-10" x2="38" y2="-50" stroke-width="2" />
+            <!-- Sails -->
+            <path d="M-30 -20 C-15 -35 -15 -45 -15 -55 C-5 -45 -5 -35 -15 -20 Z" fill="#ecd3a5" opacity="0.5" stroke-width="1.5" />
+            <path d="M0 -22 C15 -40 15 -55 15 -68 C28 -55 28 -40 15 -22 Z" fill="#ecd3a5" opacity="0.5" stroke-width="1.5" />
+            <!-- Pirate flag (Jolly Roger skull) -->
+            <polygon points="15,-70 28,-65 15,-60" fill="#1c1c1c" />
+            <text x="10" y="42" font-size="16" font-family="'Patrick Hand SC', cursive" text-anchor="middle" fill="#5c3818">The Black Pearl</text>
+          </g>
+
+          <!-- Sea Monster / Kraken Tentacles (Center) -->
+          <g transform="translate(260, 240)">
+            <path d="M0 40 Q25 10 15 -20 Q5 -40 -15 -25 Q-30 -10 -5 15 Q10 30 20 50" stroke-width="3.5" />
+            <path d="M35 45 Q55 15 45 -15 Q35 -35 20 -20" stroke-width="2.5" />
+            <circle cx="8" cy="-18" r="3" fill="#8c6239" />
+            <circle cx="2" cy="-5" r="4" fill="#8c6239" />
+            <text x="15" y="70" font-size="16" font-family="'Patrick Hand SC', cursive" font-style="italic" fill="#5c3818">here be monsters</text>
+          </g>
+
+          <!-- Dotted Voyage Route & Red X "TREASURE" -->
+          <path d="M120 470 C220 530 360 480 440 580 C500 660 480 780 340 820" stroke="#b53333" stroke-width="3" stroke-dasharray="7 9" opacity="0.7" />
+          <!-- The RED X Marks the Spot -->
+          <g transform="translate(340, 820)">
+            <line x1="-22" y1="-22" x2="22" y2="22" stroke="#d61f1f" stroke-width="6" opacity="0.85" />
+            <line x1="22" y1="-22" x2="-22" y2="22" stroke="#d61f1f" stroke-width="6" opacity="0.85" />
+            <circle cx="0" cy="0" r="32" stroke="#d61f1f" stroke-width="2.5" stroke-dasharray="4 6" opacity="0.6" />
+            <text x="0" y="46" font-size="20" font-family="'Patrick Hand SC', cursive" font-weight="bold" fill="#b51b1b" text-anchor="middle">TREASURE</text>
+          </g>
+
+          <!-- Nautical Distance Scale (Bottom-Left) -->
+          <g transform="translate(60, 840)">
+            <line x1="0" y1="0" x2="160" y2="0" stroke-width="2.5" />
+            <line x1="0" y1="-6" x2="0" y2="6" stroke-width="2" />
+            <line x1="80" y1="-4" x2="80" y2="4" stroke-width="2" />
+            <line x1="160" y1="-6" x2="160" y2="6" stroke-width="2" />
+            <text x="80" y="18" font-size="14" font-family="'Patrick Hand SC', cursive" text-anchor="middle" fill="#5c3818">100 Leagues</text>
+          </g>
+        </g>
+      </svg>
+
       <svg class="panel-doodle boil" viewBox="0 0 520 230" aria-hidden="true">
         <g fill="none" stroke="#c9c9c9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
           <path
